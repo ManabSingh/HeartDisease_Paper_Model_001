@@ -4,33 +4,34 @@ import os
 import pickle
 import time
 from xgboost import XGBClassifier
-from sklearn.metrics import classification_report, accuracy_score, roc_auc_score
-from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV, train_test_split
+from sklearn.metrics import classification_report, accuracy_score, roc_auc_score, f1_score
+from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
 
 # ==========================================
 # 1. SETUP PATHS
 # ==========================================
-BASE_DIR = r'D:\Research\Model\HeartDisease_Paper_Model_001'
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 train_path = os.path.join(BASE_DIR, 'data', 'processed', 'balanced', 'cleveland_smoteenn.csv')
 test_path = os.path.join(BASE_DIR, 'data', 'processed', 'cleaned', 'statlog_final.csv')
 model_dir = os.path.join(BASE_DIR, 'models')
 os.makedirs(model_dir, exist_ok=True)
-XGB_SEARCH_ITERS = int(os.getenv('XGB_SEARCH_ITERS', '20'))
+XGB_SEARCH_ITERS = int(os.getenv('XGB_SEARCH_ITERS', '50'))
 
 
 def find_best_threshold(y_true, y_probs, steps=201):
+    """Find threshold that maximises the weighted F1 score."""
     thresholds = np.linspace(0.1, 0.9, steps)
     best_thr = 0.5
-    best_acc = -1.0
+    best_f1 = -1.0
 
     for thr in thresholds:
         preds = (y_probs >= thr).astype(int)
-        acc = accuracy_score(y_true, preds)
-        if acc > best_acc:
-            best_acc = acc
+        score = f1_score(y_true, preds, average='weighted', zero_division=0)
+        if score > best_f1:
+            best_f1 = score
             best_thr = thr
 
-    return float(best_thr), float(best_acc)
+    return float(best_thr), float(best_f1)
 
 
 def tune_xgboost(X_train, y_train):
@@ -45,22 +46,23 @@ def tune_xgboost(X_train, y_train):
     )
 
     param_dist = {
-        'n_estimators': [150, 250, 350, 500],
-        'learning_rate': [0.01, 0.03, 0.05, 0.08, 0.1],
-        'max_depth': [3, 4, 5, 6],
-        'min_child_weight': [1, 2, 4, 6],
-        'subsample': [0.75, 0.85, 0.95, 1.0],
-        'colsample_bytree': [0.65, 0.75, 0.85, 1.0],
-        'gamma': [0.0, 0.1, 0.2, 0.4],
-        'reg_alpha': [0.0, 0.01, 0.1, 1.0],
-        'reg_lambda': [1.0, 2.0, 5.0, 10.0]
+        'n_estimators': [100, 150, 200, 250, 350, 500],
+        'learning_rate': [0.005, 0.01, 0.02, 0.03, 0.05, 0.08],
+        'max_depth': [2, 3, 4, 5],
+        'min_child_weight': [2, 3, 5, 7, 10],
+        'subsample': [0.6, 0.7, 0.8, 0.9, 1.0],
+        'colsample_bytree': [0.5, 0.6, 0.7, 0.8, 0.9],
+        'gamma': [0.0, 0.1, 0.3, 0.5, 1.0, 2.0],
+        'reg_alpha': [0.0, 0.1, 0.5, 1.0, 5.0, 10.0],
+        'reg_lambda': [1.0, 3.0, 5.0, 10.0, 20.0],
+        'scale_pos_weight': [0.8, 1.0, 1.2, 1.5]
     }
 
     search = RandomizedSearchCV(
         estimator=base_model,
         param_distributions=param_dist,
         n_iter=XGB_SEARCH_ITERS,
-        scoring='accuracy',
+        scoring='f1_weighted',
         cv=cv,
         random_state=42,
         n_jobs=-1,
@@ -85,49 +87,48 @@ def run_full_analysis():
     # ==========================================
     print("\n--- Hyperparameter Search (Randomized CV) ---")
     tune_start = time.time()
-    best_params, best_cv_acc = tune_xgboost(X_train, y_train)
-    print(f"Best CV Accuracy: {best_cv_acc:.4f}")
+    best_params, best_cv_f1 = tune_xgboost(X_train, y_train)
+    print(f"Best CV F1 (weighted): {best_cv_f1:.4f}")
     print(f"Best Parameters: {best_params}")
     print(f"Tuning Time: {time.time() - tune_start:.2f} seconds")
 
     # ==========================================
-    # 3. TRAIN FINAL MODEL WITH EARLY STOPPING
+    # 3. TRAIN FINAL MODEL ON FULL TRAINING DATA
     # ==========================================
-    X_tr, X_val, y_tr, y_val = train_test_split(
-        X_train,
-        y_train,
-        test_size=0.2,
-        stratify=y_train,
-        random_state=42
-    )
-
     xgb_model = XGBClassifier(
         objective='binary:logistic',
         tree_method='hist',
         eval_metric='logloss',
         random_state=42,
         n_jobs=-1,
-        early_stopping_rounds=30,
         **best_params
     )
 
     print("\n--- Training on Cleveland Dataset ---")
     start_time = time.time()
-    xgb_model.fit(
-        X_tr,
-        y_tr,
-        eval_set=[(X_val, y_val)],
-        verbose=False
-    )
+    xgb_model.fit(X_train, y_train)
     print(f"Total Training Time: {time.time() - start_time:.4f} seconds")
 
     # ==========================================
-    # 4. THRESHOLD OPTIMIZATION FOR ACCURACY
+    # 4. THRESHOLD OPTIMIZATION (F1-BASED VIA CV)
     # ==========================================
-    y_val_probs = xgb_model.predict_proba(X_val)[:, 1]
-    best_thr, best_val_acc = find_best_threshold(y_val, y_val_probs)
-    print(f"Best Validation Threshold: {best_thr:.3f}")
-    print(f"Validation Accuracy @ Best Threshold: {best_val_acc:.4f}")
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    oof_probs = np.zeros(len(y_train))
+    for train_idx, val_idx in cv.split(X_train, y_train):
+        fold_model = XGBClassifier(
+            objective='binary:logistic',
+            tree_method='hist',
+            eval_metric='logloss',
+            random_state=42,
+            n_jobs=-1,
+            **best_params
+        )
+        fold_model.fit(X_train.iloc[train_idx], y_train.iloc[train_idx])
+        oof_probs[val_idx] = fold_model.predict_proba(X_train.iloc[val_idx])[:, 1]
+
+    best_thr, best_val_f1 = find_best_threshold(y_train, oof_probs)
+    print(f"Best CV Threshold: {best_thr:.3f}")
+    print(f"CV F1 (weighted) @ Best Threshold: {best_val_f1:.4f}")
 
     # ==========================================
     # 5. FULL REPORT: CLEVELAND (SOURCE)
@@ -162,7 +163,7 @@ def run_full_analysis():
             {
                 'model': xgb_model,
                 'threshold': best_thr,
-                'best_cv_accuracy': best_cv_acc,
+                'best_cv_f1': best_cv_f1,
                 'best_params': best_params
             },
             f
