@@ -3,6 +3,7 @@ import numpy as np
 import os
 import pickle
 import time
+from pathlib import Path
 from xgboost import XGBClassifier
 from sklearn.metrics import classification_report, accuracy_score, roc_auc_score, f1_score
 from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
@@ -10,7 +11,7 @@ from sklearn.model_selection import StratifiedKFold, RandomizedSearchCV
 # ==========================================
 # 1. SETUP PATHS
 # ==========================================
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+BASE_DIR = str(Path(__file__).resolve().parent.parent.parent)
 train_path = os.path.join(BASE_DIR, 'data', 'processed', 'balanced', 'cleveland_smoteenn.csv')
 test_path = os.path.join(BASE_DIR, 'data', 'processed', 'cleaned', 'statlog_final.csv')
 model_dir = os.path.join(BASE_DIR, 'models')
@@ -34,16 +35,24 @@ def find_best_threshold(y_true, y_probs, steps=201):
     return float(best_thr), float(best_f1)
 
 
-def tune_xgboost(X_train, y_train):
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-
-    base_model = XGBClassifier(
+def _build_xgb(extra_params=None):
+    """Create an XGBClassifier with the shared base configuration."""
+    params = dict(
         objective='binary:logistic',
         tree_method='hist',
         eval_metric='logloss',
         random_state=42,
         n_jobs=-1
     )
+    if extra_params:
+        params.update(extra_params)
+    return XGBClassifier(**params)
+
+
+def tune_xgboost(X_train, y_train):
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
+    base_model = _build_xgb()
 
     param_dist = {
         'n_estimators': [100, 150, 200, 250, 350, 500],
@@ -95,14 +104,7 @@ def run_full_analysis():
     # ==========================================
     # 3. TRAIN FINAL MODEL ON FULL TRAINING DATA
     # ==========================================
-    xgb_model = XGBClassifier(
-        objective='binary:logistic',
-        tree_method='hist',
-        eval_metric='logloss',
-        random_state=42,
-        n_jobs=-1,
-        **best_params
-    )
+    xgb_model = _build_xgb(best_params)
 
     print("\n--- Training on Cleveland Dataset ---")
     start_time = time.time()
@@ -115,14 +117,7 @@ def run_full_analysis():
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     oof_probs = np.zeros(len(y_train))
     for train_idx, val_idx in cv.split(X_train, y_train):
-        fold_model = XGBClassifier(
-            objective='binary:logistic',
-            tree_method='hist',
-            eval_metric='logloss',
-            random_state=42,
-            n_jobs=-1,
-            **best_params
-        )
+        fold_model = _build_xgb(best_params)
         fold_model.fit(X_train.iloc[train_idx], y_train.iloc[train_idx])
         oof_probs[val_idx] = fold_model.predict_proba(X_train.iloc[val_idx])[:, 1]
 
