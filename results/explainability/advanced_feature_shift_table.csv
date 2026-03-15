@@ -1,0 +1,23 @@
+Feature,Cleveland Rank,Statlog Rank,Rank Shift,Cleveland Magnitude,Statlog Magnitude,Logic Inverted?
+thalach,1,1,Unchanged,0.1735,0.2077,No
+age,2,2,Unchanged,0.1462,0.1651,No
+cp_3,3,3,Unchanged,0.0480,0.0993,No
+thal_3,4,5,Dropped 1,0.0387,0.0621,No
+ca,5,6,Dropped 1,0.0381,0.0561,No
+oldpeak,6,4,Rose 2,0.0374,0.0629,No
+thal_1,7,7,Unchanged,0.0212,0.0455,No
+chol,8,8,Unchanged,0.0115,0.0349,No
+slope_1,9,10,Dropped 1,0.0088,0.0101,No
+restecg_2,10,9,Rose 1,0.0069,0.0145,No
+trestbps,11,11,Unchanged,0.0044,0.0078,No
+restecg_0,12,19,Dropped 7,0.0015,0.0009,No
+cp_1,13,14,Dropped 1,0.0015,0.0018,No
+slope_0,14,15,Dropped 1,0.0014,0.0018,No
+cp_2,15,13,Rose 2,0.0014,0.0031,No
+fbs,16,16,Unchanged,0.0009,0.0017,No
+exang,17,18,Dropped 1,0.0008,0.0009,No
+slope_2,18,12,Rose 6,0.0007,0.0038,No
+sex,19,20,Dropped 1,0.0002,0.0004,No
+cp_0,20,21,Dropped 1,0.0001,0.0004,No
+thal_2,21,17,Rose 4,0.0001,0.0010,No
+restecg_1,22,22,Unchanged,0.0000,0.0000,No

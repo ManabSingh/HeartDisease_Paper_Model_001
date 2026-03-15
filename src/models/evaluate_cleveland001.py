@@ -27,6 +27,7 @@ def evaluate_cleveland_source():
         model = pickle.load(f)
 
     # 4. GENERATE "HONEST" PREDICTIONS VIA CROSS-VALIDATION
+    # We use CV here so we don't report inflated "training accuracy"
     print("Performing Stratified 5-Fold Cross-Validation on Cleveland...")
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     
@@ -36,29 +37,24 @@ def evaluate_cleveland_source():
     # 5. CALCULATE METRICS
     acc = accuracy_score(y, y_pred)
     prec = precision_score(y, y_pred)
-    rec = recall_score(y, y_pred) # Sensitivity
+    rec = recall_score(y, y_pred)
     f1 = f1_score(y, y_pred)
     auc = roc_auc_score(y, y_probs)
-    
-    # Extract values from confusion matrix to calculate Specificity
     cm = confusion_matrix(y, y_pred)
-    tn, fp, fn, tp = cm.ravel()
-    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0 # Calculated Specificity
 
     # 6. PRINT RESULTS TABLE
     print("\n" + "="*50)
     print("       CLEVELAND (SOURCE DOMAIN) PERFORMANCE")
     print("="*50)
-    print(f"Accuracy:    {acc:.4f}")
-    print(f"Precision:   {prec:.4f}")
-    print(f"Sensitivity: {rec:.4f}  (Recall)")
-    print(f"Specificity: {specificity:.4f}")
-    print(f"F1 Score:    {f1:.4f}")
-    print(f"AUC-ROC:     {auc:.4f}")
+    print(f"Accuracy:  {acc:.4f}")
+    print(f"Precision: {prec:.4f}")
+    print(f"Recall:    {rec:.4f}")
+    print(f"F1 Score:  {f1:.4f}")
+    print(f"AUC-ROC:   {auc:.4f}")
     print("-" * 50)
     print("Confusion Matrix:")
-    print(f"TN: {tn} | FP: {fp}")
-    print(f"FN: {fn} | TP: {tp}")
+    print(f"TN: {cm[0,0]} | FP: {cm[0,1]}")
+    print(f"FN: {cm[1,0]} | TP: {cm[1,1]}")
     print("="*50)
 
 if __name__ == "__main__":

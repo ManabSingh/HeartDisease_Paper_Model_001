@@ -1,0 +1,7 @@
+Metric,Source: Cleveland,Target: Statlog,Shift (Difference)
+Accuracy,0.9247,0.8148,-10.99%
+Precision,0.9167,0.8241,-9.26%
+Sensitivity (Recall),0.9362,0.7417,-19.45%
+Specificity,0.9130,0.8733,-3.97%
+F1-Score,0.9263,0.7807,-14.56%
+AUC-ROC,0.9801,0.9055,-7.46%
