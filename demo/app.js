@@ -1,6 +1,6 @@
 // ============================================
 //  HEART DISEASE PREDICTION — APP.JS
-//  Client-side prediction simulation, UI logic
+//  Connects to Flask backend for REAL model predictions
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -49,55 +49,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // 3. PREDICTION ENGINE (Client-Side Simulation)
+    // 3. COLLECT PATIENT DATA FROM FORM
     // ==========================================
-
-    // Feature importance weights from the trained ensemble model.
-    // These are the normalized Ensemble_Average values from feature_importance_table.csv.
-    // Used to create a weighted scoring function for client-side simulation.
-    const FEATURE_WEIGHTS = {
-        thalach:    0.2205,
-        age:        0.2189,
-        cp_3:       0.1194,
-        thal_3:     0.0971,
-        ca:         0.0955,
-        thal_1:     0.0954,
-        oldpeak:    0.0628,
-        chol:       0.0513,
-        slope_1:    0.0113,
-        restecg_2:  0.0095,
-        trestbps:   0.0085,
-        cp_2:       0.0020,
-        cp_1:       0.0018,
-        fbs:        0.0017,
-        slope_0:    0.0013,
-        slope_2:    0.0011,
-        restecg_0:  0.0011,
-        exang:      0.0007,
-        sex:        0.0002,
-        thal_2:     0.0001,
-        cp_0:       0.0001,
-        restecg_1:  0.0000
-    };
-
-    // Normalization ranges (approximate from Cleveland dataset)
-    const NORM_RANGES = {
-        age:      { min: 29, max: 77 },
-        trestbps: { min: 94, max: 200 },
-        chol:     { min: 126, max: 564 },
-        thalach:  { min: 71, max: 202 },
-        oldpeak:  { min: 0, max: 6.2 },
-        ca:       { min: 0, max: 4 }
-    };
-
-    function normalize(value, min, max) {
-        return (value - min) / (max - min);
-    }
-
-    function sigmoid(x) {
-        return 1 / (1 + Math.exp(-x));
-    }
-
     function getPatientData() {
         return {
             age:      parseInt(document.getElementById('age').value),
@@ -116,60 +69,71 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function computeRiskScore(data) {
-        // Build one-hot encoded feature vector
-        const features = {
-            age:        normalize(data.age, NORM_RANGES.age.min, NORM_RANGES.age.max),
-            sex:        data.sex,
-            trestbps:   normalize(data.trestbps, NORM_RANGES.trestbps.min, NORM_RANGES.trestbps.max),
-            chol:       normalize(data.chol, NORM_RANGES.chol.min, NORM_RANGES.chol.max),
-            fbs:        data.fbs,
-            thalach:    1 - normalize(data.thalach, NORM_RANGES.thalach.min, NORM_RANGES.thalach.max), // Inverse: lower HR = higher risk
-            exang:      data.exang,
-            oldpeak:    normalize(data.oldpeak, NORM_RANGES.oldpeak.min, NORM_RANGES.oldpeak.max),
-            ca:         normalize(data.ca, NORM_RANGES.ca.min, NORM_RANGES.ca.max),
-            cp_0:       data.cp === 0 ? 1 : 0,
-            cp_1:       data.cp === 1 ? 1 : 0,
-            cp_2:       data.cp === 2 ? 1 : 0,
-            cp_3:       data.cp === 3 ? 1 : 0,
-            restecg_0:  data.restecg === 0 ? 1 : 0,
-            restecg_1:  data.restecg === 1 ? 1 : 0,
-            restecg_2:  data.restecg === 2 ? 1 : 0,
-            slope_0:    data.slope === 0 ? 1 : 0,
-            slope_1:    data.slope === 1 ? 1 : 0,
-            slope_2:    data.slope === 2 ? 1 : 0,
-            thal_1:     data.thal === 1 ? 1 : 0,
-            thal_2:     data.thal === 2 ? 1 : 0,
-            thal_3:     data.thal === 3 ? 1 : 0
-        };
+    // ==========================================
+    // 4. REAL MODEL PREDICTION VIA FLASK API
+    // ==========================================
+    async function predictFromServer(data) {
+        try {
+            const response = await fetch('/api/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
 
-        // Weighted sum
-        let score = -0.5; // bias
-        for (const [key, weight] of Object.entries(FEATURE_WEIGHTS)) {
-            score += (features[key] || 0) * weight * 4.5; // Amplify for sigmoid spread
+            const result = await response.json();
+
+            if (result.success) {
+                // Update gauge with REAL ensemble prediction
+                updateGauge(result.ensemble.probability);
+
+                // Update Board of Doctors with REAL base model predictions
+                updateDoctorVotes({
+                    xgb:  result.base_models.xgboost,
+                    lgbm: result.base_models.lightgbm,
+                    rf:   result.base_models.random_forest
+                });
+
+                return true;
+            } else {
+                console.error('Prediction error:', result.error);
+                showServerError(result.error);
+                return false;
+            }
+        } catch (err) {
+            console.error('Server connection error:', err);
+            showServerError('Cannot connect to server. Make sure server.py is running.');
+            return false;
         }
-
-        return sigmoid(score);
     }
 
-    // Simulate individual model opinions (slight random offsets from ensemble)
-    function simulateModelVotes(ensembleScore) {
-        const jitter = () => (Math.random() - 0.5) * 0.12;
-        return {
-            xgb:  Math.max(0, Math.min(1, ensembleScore + jitter())),
-            lgbm: Math.max(0, Math.min(1, ensembleScore + jitter())),
-            rf:   Math.max(0, Math.min(1, ensembleScore + jitter()))
-        };
+    // Show error message in the gauge area
+    function showServerError(message) {
+        const pctEl = document.getElementById('gauge-percent');
+        const verdictEl = document.getElementById('verdict-text');
+        const badgeEl = document.getElementById('verdict-badge');
+
+        pctEl.textContent = '—%';
+        pctEl.style.color = 'var(--accent-amber)';
+        badgeEl.className = 'verdict-badge high-risk';
+        badgeEl.style.borderColor = 'rgba(245, 158, 11, 0.3)';
+        badgeEl.style.background = 'rgba(245, 158, 11, 0.15)';
+        verdictEl.textContent = '⚠️ ' + message;
+        verdictEl.style.color = 'var(--accent-amber)';
     }
 
     // ==========================================
-    // 4. GAUGE RENDERING
+    // 5. GAUGE RENDERING
     // ==========================================
     function updateGauge(probability) {
         const gaugeEl = document.getElementById('gauge-fill');
         const pctEl = document.getElementById('gauge-percent');
         const badgeEl = document.getElementById('verdict-badge');
         const verdictEl = document.getElementById('verdict-text');
+
+        // Reset any error styles
+        badgeEl.style.borderColor = '';
+        badgeEl.style.background = '';
+        verdictEl.style.color = '';
 
         // Arc length calculation (semi-circle)
         const totalLength = 283; // approximate circumference of the semi-arc
@@ -207,22 +171,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 5. FORM SUBMISSION
+    // 6. FORM SUBMISSION — Calls Real API
     // ==========================================
     const form = document.getElementById('prediction-form');
-    form.addEventListener('submit', (e) => {
+    const btnPredict = document.getElementById('btn-predict');
+
+    form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const data = getPatientData();
-        const risk = computeRiskScore(data);
-        const votes = simulateModelVotes(risk);
+        // Show loading state
+        btnPredict.textContent = '⏳ Running Models...';
+        btnPredict.disabled = true;
 
-        updateGauge(risk);
-        updateDoctorVotes(votes);
+        const data = getPatientData();
+        await predictFromServer(data);
+
+        // Reset button
+        btnPredict.textContent = '🔬 Run Diagnostic Analysis';
+        btnPredict.disabled = false;
     });
 
     // ==========================================
-    // 6. FEATURE IMPORTANCE CHART (Section 2)
+    // 7. FEATURE IMPORTANCE CHART (Section 2)
     // ==========================================
     const importanceData = [
         { name: 'thalach',     label: 'Max Heart Rate',      source: 22.05, target: 22.05 },
@@ -264,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
     buildImportanceChart();
 
     // ==========================================
-    // 7. LIGHTBOX — Image Full-Screen Viewer
+    // 8. LIGHTBOX — Image Full-Screen Viewer
     // ==========================================
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightbox-img');
@@ -298,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================
-    // 8. SCROLL ANIMATIONS
+    // 9. SCROLL ANIMATIONS
     // ==========================================
     function triggerScrollAnimations() {
         const elements = document.querySelectorAll('.animate-on-scroll');
@@ -316,15 +286,16 @@ document.addEventListener('DOMContentLoaded', () => {
     triggerScrollAnimations();
 
     // ==========================================
-    // 9. INITIAL DEMO PREDICTION
+    // 10. INITIAL PREDICTION ON LOAD
     // ==========================================
-    // Run an initial prediction with default values so the gauge isn't empty
-    setTimeout(() => {
+    // Try the real server; if unavailable, show a message
+    setTimeout(async () => {
         const data = getPatientData();
-        const risk = computeRiskScore(data);
-        const votes = simulateModelVotes(risk);
-        updateGauge(risk);
-        updateDoctorVotes(votes);
+        const success = await predictFromServer(data);
+        if (!success) {
+            // Server not running — show helpful message
+            console.log('Server not detected. Run: python demo/server.py');
+        }
     }, 500);
 
 });
