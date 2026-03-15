@@ -1,0 +1,72 @@
+digraph HeartDiseaseArchitecture {
+    // Global Settings
+    fontname="Segoe UI,Arial,sans-serif";
+    node [fontname="Segoe UI,Arial,sans-serif", fontsize=11, penwidth=1.5];
+    edge [fontname="Segoe UI,Arial,sans-serif", fontsize=10, color="#546E7A", arrowhead=vee];
+    rankdir=LR; // Left to Right flow
+    compound=true;
+
+    // Node Styles
+    node [shape=box, style="filled,rounded", color="#263238", fillcolor="#ECEFF1"];
+    
+    // Phase 1 & 2: Data Engineering
+    subgraph cluster_data {
+        label = "Layer 1: Data Acquisition & Engineering";
+        labeljust = "l";
+        style="filled,dashed";
+        color="#B0BEC5";
+        fillcolor="#F5F7F8";
+
+        RawData [label="Raw Clinical Data\n(Cleveland & Statlog)", shape=cylinder, fillcolor="#90CAF9"];
+        Cleaning [label="Cleaning &\nImputation"];
+        Preprocessing [label="Scaling &\nEncoding"];
+        Balancing [label="SMOTE-ENN\nBalancing", fillcolor="#A5D6A7"];
+        
+        RawData -> Cleaning -> Preprocessing -> Balancing;
+    }
+
+    // Phase 4 & 5: Modeling
+    subgraph cluster_models {
+        label = "Layer 2: Hybrid Stacking Ensemble";
+        labeljust = "l";
+        style="filled,solid";
+        color="#1976D2";
+        fillcolor="#E3F2FD";
+
+        subgraph cluster_base {
+            label = "Level-0 Base Learners";
+            color="#1976D2";
+            XGB [label="XGBoost", fillcolor="#ffffff"];
+            LGBM [label="LightGBM", fillcolor="#ffffff"];
+            RF [label="Random Forest", fillcolor="#ffffff"];
+        }
+
+        Meta [label="Level-1 Meta-Classifier\n(Logistic Regression)", shape=diamond, fillcolor="#FFF59D"];
+        
+        XGB -> Meta;
+        LGBM -> Meta;
+        RF -> Meta;
+    }
+
+    // Phase 8 & 9: Evaluation & Interpretability
+    subgraph cluster_output {
+        label = "Layer 3: Evaluation & XAI";
+        labeljust = "l";
+        style="filled,dashed";
+        color="#455A64";
+        fillcolor="#FAFAFA";
+
+        Metrics [label="Performance Metrics\n(AUC, Acc, F1)"];
+        SHAP [label="SHAP Explainability\n(Attribution Shift)", fillcolor="#FFAB91"];
+        
+        Meta -> Metrics;
+        Meta -> SHAP;
+    }
+
+    // Phase 10: Clinical Application
+    UI [label="Clinical Decision\nSupport System (UI)", shape=invhouse, fillcolor="#C8E6C9", style="filled,bold"];
+
+    // Main Flow Connections
+    Balancing -> XGB [lhead=cluster_models, minlen=2];
+    Meta -> UI [label="Final Inference", fontcolor="#2E7D32", penwidth=2];
+}
