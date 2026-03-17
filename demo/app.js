@@ -153,10 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isHighRisk) {
             badgeEl.className = 'verdict-badge high-risk';
-            verdictEl.textContent = '🚨 HIGH RISK — Heart Disease Detected';
+            badgeEl.innerHTML = '<span>🚨</span> <span>HIGH RISK — Heart Disease Detected</span>';
         } else {
             badgeEl.className = 'verdict-badge low-risk';
-            verdictEl.textContent = '✅ LOW RISK — No Significant Pathology';
+            badgeEl.innerHTML = '<span>✅</span> <span>LOW RISK — No Significant Pathology</span>';
         }
     }
 

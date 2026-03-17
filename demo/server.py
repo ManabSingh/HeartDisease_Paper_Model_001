@@ -41,6 +41,11 @@ try:
         rf_model = pickle.load(f)
     print("  [OK] Random Forest loaded")
 
+    # ---> ADDED: Load the Scaler <---
+    with open(os.path.join(MODEL_DIR, 'scaler.pkl'), 'rb') as f:
+        scaler = pickle.load(f)
+    print("  [OK] Scaler loaded")
+
     print("=" * 50)
     print("  All models loaded successfully!")
     print("=" * 50)
@@ -131,6 +136,10 @@ def predict():
 
         # Create DataFrame with exact column order
         patient_df = pd.DataFrame([encoded], columns=EXPECTED_COLS)
+
+        # ---> ADDED: Apply the Scaler to continuous columns <---
+        continuous_cols = ['age', 'trestbps', 'chol', 'thalach', 'oldpeak', 'ca']
+        patient_df[continuous_cols] = scaler.transform(patient_df[continuous_cols])
 
         # ---- Run ALL models ----
         # Stacking Ensemble (Meta-Classifier)
