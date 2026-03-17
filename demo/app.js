@@ -124,19 +124,24 @@ document.addEventListener('DOMContentLoaded', () => {
     // ==========================================
     // 5. GAUGE RENDERING
     // ==========================================
+    // ==========================================
+    // 5. GAUGE RENDERING
+    // ==========================================
     function updateGauge(probability) {
         const gaugeEl = document.getElementById('gauge-fill');
         const pctEl = document.getElementById('gauge-percent');
         const badgeEl = document.getElementById('verdict-badge');
-        const verdictEl = document.getElementById('verdict-text');
+        let verdictEl = document.getElementById('verdict-text');
 
-        // Reset any error styles
+        // Reset any error styles safely
         badgeEl.style.borderColor = '';
         badgeEl.style.background = '';
-        verdictEl.style.color = '';
+        if (verdictEl) {
+            verdictEl.style.color = '';
+        }
 
         // Arc length calculation (semi-circle)
-        const totalLength = 283; // approximate circumference of the semi-arc
+        const totalLength = 283; 
         const offset = totalLength * (1 - probability);
 
         gaugeEl.style.strokeDashoffset = offset;
@@ -151,12 +156,13 @@ document.addEventListener('DOMContentLoaded', () => {
         pctEl.textContent = `${(probability * 100).toFixed(1)}%`;
         pctEl.style.color = color;
 
+        // Re-inject the innerHTML but PRESERVE the verdict-text ID
         if (isHighRisk) {
             badgeEl.className = 'verdict-badge high-risk';
-            badgeEl.innerHTML = '<span>🚨</span> <span>HIGH RISK — Heart Disease Detected</span>';
+            badgeEl.innerHTML = '<span>🚨</span> <span id="verdict-text">HIGH RISK — Heart Disease Detected</span>';
         } else {
             badgeEl.className = 'verdict-badge low-risk';
-            badgeEl.innerHTML = '<span>✅</span> <span>LOW RISK — No Significant Pathology</span>';
+            badgeEl.innerHTML = '<span>✅</span> <span id="verdict-text">LOW RISK — No Significant Pathology</span>';
         }
     }
 
