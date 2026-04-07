@@ -1,0 +1,23 @@
+Feature,Cleveland Rank,Statlog Rank,Rank Shift Formatted,Cleveland Mag,Statlog Mag,Cleveland Direction,Statlog Direction,Logic Inverted?
+thalach,1,2,Dropped 1,0.2126,0.1782,Negative,Negative,No
+age,2,1,Rose 1,0.1533,0.2334,Positive,Positive,No
+ca,3,3,Unchanged,0.0628,0.1136,Positive,Positive,No
+cp_3,4,4,Unchanged,0.0340,0.0794,Positive,Positive,No
+oldpeak,5,6,Dropped 1,0.0336,0.0457,Positive,Positive,No
+thal_3,6,7,Dropped 1,0.0168,0.0450,Positive,Positive,No
+thal_1,7,5,Rose 2,0.0162,0.0464,Negative,Negative,No
+chol,8,8,Unchanged,0.0136,0.0131,Positive,Positive,No
+exang,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+fbs,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+cp_1,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+cp_0,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+cp_2,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+restecg_0,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+trestbps,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+sex,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+restecg_2,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+restecg_1,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+slope_1,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+slope_0,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+slope_2,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
+thal_2,15,15,Unchanged,0.0000,0.0000,Negative,Negative,No
