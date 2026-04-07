@@ -1,23 +1,23 @@
-Feature,Cleveland Rank,Statlog Rank,Rank Shift,Cleveland Magnitude,Statlog Magnitude,Logic Inverted?,Status
-thalach,1,1,Unchanged,0.1735,0.2077,No,Stable
-age,2,2,Unchanged,0.1462,0.1651,No,Stable
-cp_3,3,3,Unchanged,0.048,0.0993,No,Stable
-thal_3,4,5,Dropped 1,0.0387,0.0621,No,Shifted
-ca,5,6,Dropped 1,0.0381,0.0561,No,Shifted
-oldpeak,6,4,Rose 2,0.0374,0.0629,No,Shifted
-thal_1,7,7,Unchanged,0.0212,0.0455,No,Stable
-chol,8,8,Unchanged,0.0115,0.0349,No,Stable
-slope_1,9,10,Dropped 1,0.0088,0.0101,No,Shifted
-restecg_2,10,9,Rose 1,0.0069,0.0145,No,Shifted
-trestbps,11,11,Unchanged,0.0044,0.0078,No,Stable
-restecg_0,12,19,Dropped 7,0.0015,0.0009,No,Highly Unstable
-cp_1,13,14,Dropped 1,0.0015,0.0018,No,Shifted
-slope_0,14,15,Dropped 1,0.0014,0.0018,No,Shifted
-cp_2,15,13,Rose 2,0.0014,0.0031,No,Shifted
-fbs,16,16,Unchanged,0.0009,0.0017,No,Stable
-exang,17,18,Dropped 1,0.0008,0.0009,No,Shifted
-slope_2,18,12,Rose 6,0.0007,0.0038,No,Highly Unstable
-sex,19,20,Dropped 1,0.0002,0.0004,No,Shifted
-cp_0,20,21,Dropped 1,0.0001,0.0004,No,Shifted
-thal_2,21,17,Rose 4,0.0001,0.001,No,Highly Unstable
-restecg_1,22,22,Unchanged,0.0,0.0,No,Stable
+Feature,Cleveland Rank,Statlog Rank,Rank Shift,Cleveland Magnitude,Statlog Magnitude,Status
+thalach,1,1,Unchanged,0.1759,0.2069,Stable
+age,2,2,Unchanged,0.1417,0.1649,Stable
+cp_3,3,3,Unchanged,0.0514,0.1001,Stable
+thal_3,4,5,Dropped 1,0.0425,0.0629,Shifted
+ca,5,6,Dropped 1,0.0377,0.0539,Shifted
+oldpeak,6,4,Rose 2,0.0328,0.0656,Shifted
+thal_1,7,7,Unchanged,0.0219,0.0442,Stable
+chol,8,8,Unchanged,0.0122,0.0337,Stable
+slope_1,9,10,Dropped 1,0.0094,0.0094,Shifted
+restecg_2,10,9,Rose 1,0.0061,0.0135,Shifted
+trestbps,11,11,Unchanged,0.0039,0.0079,Stable
+slope_0,12,14,Dropped 2,0.0017,0.0018,Minor Shift (Noise)
+restecg_0,13,17,Dropped 4,0.0014,0.001,Noise (Low Impact)
+cp_1,14,15,Dropped 1,0.0014,0.0015,Minor Shift (Noise)
+cp_2,15,12,Rose 3,0.0012,0.0031,Minor Shift (Noise)
+fbs,16,16,Unchanged,0.0011,0.0015,Stable
+slope_2,17,13,Rose 4,0.001,0.0031,Noise (Low Impact)
+exang,18,18,Unchanged,0.0007,0.001,Stable
+sex,19,19,Unchanged,0.0002,0.0005,Stable
+cp_0,20,21,Dropped 1,0.0001,0.0003,Minor Shift (Noise)
+thal_2,21,20,Rose 1,0.0,0.0005,Minor Shift (Noise)
+restecg_1,22,22,Unchanged,0.0,0.0,Stable

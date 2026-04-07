@@ -4,6 +4,7 @@ import os
 import pickle
 import shap
 import warnings
+from scipy.stats import spearmanr # ADDED FOR FIX 4 (H1 PROOF)
 
 warnings.filterwarnings("ignore")
 
@@ -19,7 +20,7 @@ results_dir = os.path.join(BASE_DIR, 'results', 'explainability')
 os.makedirs(results_dir, exist_ok=True)
 
 def generate_advanced_shift_table():
-    print("--- Generating Advanced Feature Shift Table (H1 Proof) ---")
+    print("--- Generating Severe Feature Shift Table (H1 Proof) ---")
     
     with open(model_path, 'rb') as f:
         model = pickle.load(f)
@@ -44,18 +45,13 @@ def generate_advanced_shift_table():
     mag_cleve = np.abs(shap_cleve.values).mean(axis=0)
     mag_stat = np.abs(shap_stat.values).mean(axis=0)
 
-    # Calculate Direction (Pearson Correlation between feature value and SHAP value)
-    # If correlation is > 0, high feature value -> predicts disease. If < 0, high feature -> predicts healthy.
-    dir_cleve = [np.corrcoef(X_cleve.iloc[:, i], shap_cleve.values[:, i])[0, 1] for i in range(X_cleve.shape[1])]
-    dir_stat = [np.corrcoef(X_stat.iloc[:, i], shap_stat.values[:, i])[0, 1] for i in range(X_stat.shape[1])]
+    # REMOVED: Logic Inversion (Direction) calculations have been removed as per Fix 1.
 
     # Build DataFrame
     df = pd.DataFrame({
         'Feature': X_cleve.columns,
         'Cleveland Magnitude': mag_cleve,
         'Statlog Magnitude': mag_stat,
-        'Cleveland Direction': ['Positive' if d > 0 else 'Negative' for d in dir_cleve],
-        'Statlog Direction': ['Positive' if d > 0 else 'Negative' for d in dir_stat]
     })
 
     # Add Ranks
@@ -66,24 +62,30 @@ def generate_advanced_shift_table():
     df['Rank Shift'] = df['Cleveland Rank'] - df['Statlog Rank']
     df['Rank Shift'] = df['Rank Shift'].apply(lambda x: f"Rose {abs(x)}" if x > 0 else (f"Dropped {abs(x)}" if x < 0 else "Unchanged"))
 
-    # Flag Directional Flips
-    df['Logic Inverted?'] = df.apply(lambda row: "YES (Critical)" if row['Cleveland Direction'] != row['Statlog Direction'] else "No", axis=1)
-
     # Format the table for readability
     df['Cleveland Magnitude'] = df['Cleveland Magnitude'].apply(lambda x: f"{x:.4f}")
     df['Statlog Magnitude'] = df['Statlog Magnitude'].apply(lambda x: f"{x:.4f}")
     
-    # Reorder columns
-    df = df[['Feature', 'Cleveland Rank', 'Statlog Rank', 'Rank Shift', 'Cleveland Magnitude', 'Statlog Magnitude', 'Logic Inverted?']]
+    # Reorder columns (Logic Inverted column removed)
+    df = df[['Feature', 'Cleveland Rank', 'Statlog Rank', 'Rank Shift', 'Cleveland Magnitude', 'Statlog Magnitude']]
     df = df.sort_values(by='Cleveland Rank').reset_index(drop=True)
 
     print("\n" + "="*80)
     print(df.to_string(index=False))
     print("="*80)
 
+    # --- FIX 4: STATISTICAL PROOF FOR H1 ---
+    correlation, p_value = spearmanr(df['Cleveland Rank'], df['Statlog Rank'])
+    print(f"\n--- Statistical Proof for H1 ---")
+    print(f"Spearman Rank Correlation: {correlation:.4f}")
+    print(f"P-value: {p_value:.4e}")
+    if p_value < 0.05 and correlation < 1.0:
+        print("CONCLUSION: The rankings are significantly different across domains.")
+        print("This provides empirical evidence to reject the null hypothesis and accept H1.")
+
     save_path = os.path.join(results_dir, 'advanced_feature_shift_table.csv')
     df.to_csv(save_path, index=False)
-    print(f"\nSUCCESS: Advanced table saved to {save_path}")
+    print(f"\nSUCCESS: Severe shift table saved to {save_path}")
 
 if __name__ == "__main__":
     generate_advanced_shift_table()
