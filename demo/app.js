@@ -152,10 +152,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `hsl(${Math.max(0, (1 - probability) * 60)}, 85%, 55%)`
             : `hsl(${130 - probability * 60}, 70%, 50%)`;
 
-        gaugeEl.style.stroke = color;
-        pctEl.textContent = `${(probability * 100).toFixed(1)}%`;
+       gaugeEl.style.stroke = color;
+        
+        // Replaces the exact percentage with a simple text label
+        // (If you want it completely blank, change it to: pctEl.textContent = '';)
+        pctEl.textContent = isHighRisk ? 'HIGH' : 'LOW';
+        
         pctEl.style.color = color;
-
         // Re-inject the innerHTML but PRESERVE the verdict-text ID
         if (isHighRisk) {
             badgeEl.className = 'verdict-badge high-risk';
